@@ -32,7 +32,7 @@ vectorstore = Pinecone.from_existing_index(index_name=index_name, embedding=embe
 llm = ChatOpenAI(temperature=0)
 qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=vectorstore.as_retriever())
 
-# UI
+# UI design
 st.title("My AI Agent")
 query = st.text_input("Ask me something:")
 if query:
