@@ -12,12 +12,12 @@ pinecone_api = st.secrets["PINECONE_API_KEY"]
 pinecone_env = st.secrets["PINECONE_ENVIRONMENT"]
 index_name = st.secrets["PINECONE_INDEX_NAME"]
 langsmith_api_key = st.secrets["LANGSMITH_API_KEY"]
-langsmith_project = st.secrets.get("LANGSMITH_PROJECT", "default")
+agent_template = st.secrets.get("LANGSMITH_PROJECT", "default")
 
 # Set API keys and environment variables
 os.environ["OPENAI_API_KEY"] = openai_api
 os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
-os.environ["LANGCHAIN_PROJECT"] = langsmith_project
+os.environ["LANGCHAIN_PROJECT"] = agent_template
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 
 # Initialize Pinecone
