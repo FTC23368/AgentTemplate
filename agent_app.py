@@ -15,6 +15,25 @@ os.environ["LANGCHAIN_PROJECT"]="AgentTemplate"
 os.environ['LANGCHAIN_ENDPOINT']="https://api.smith.langchain.com"
 os.environ['SENDGRID_API_KEY']=st.secrets['SENDGRID_API_KEY']
 
+def get_google_cloud_credentials():
+    """
+    Gets and sets up Google Cloud credentials for authentication.
+    This function:
+    1. Retrieves the Google service account key from Streamlit secrets
+    2. Converts the JSON string to a Python dictionary
+    3. Creates a credentials object that can be used to authenticate with Google services
+    
+    Returns:
+        service_account.Credentials: Google Cloud credentials object
+    """
+    # Get Google Cloud credentials from Streamlit secrets
+    js1 = st.secrets["GOOGLE_KEY"]
+    #print(" A-plus Google credentials JS: ", js1)
+    credentials_dict=json.loads(js1)
+    credentials = service_account.Credentials.from_service_account_info(credentials_dict)   
+    st.session_state.credentials = credentials
+    return credentials
+
 def initialize_prompts():
 
     if "credentials" not in st.session_state:
