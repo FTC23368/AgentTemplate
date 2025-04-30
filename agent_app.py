@@ -11,7 +11,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, Base
 # Set environment variables for Langchain and SendGrid
 os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=st.secrets['LANGCHAIN_API_KEY']
-os.environ["LANGCHAIN_PROJECT"]="SalesCompAgent"
+os.environ["LANGCHAIN_PROJECT"]="AgentTemplate"
 os.environ['LANGCHAIN_ENDPOINT']="https://api.smith.langchain.com"
 os.environ['SENDGRID_API_KEY']=st.secrets['SENDGRID_API_KEY']
 
@@ -56,7 +56,7 @@ def start_chat(container=st):
         for s in app.graph.stream({'initialMessage': prompt, 'sessionState': st.session_state, 
         'sessionHistory': st.session_state.messages}, thread):
 
-            if resp := v.get("responseToUser"):
+            if resp := s.get("responseToUser"):
                 with st.chat_message("assistant", avatar=avatars["assistant"]):
                     st.write(resp) 
                 st.session_state.messages.append({"role": "assistant", "content": resp})
