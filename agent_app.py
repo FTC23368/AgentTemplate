@@ -1,40 +1,66 @@
-import streamlit as st
-from langchain.chat_models import ChatOpenAI
-from langchain.vectorstores import Pinecone
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.chains import RetrievalQA
-import pinecone
 import os
+import json
+import PyPDF2
+import random
+import streamlit as st
+from src.graph import salesCompAgent
+from src.google_firestore_integration import get_all_prompts
+from google.oauth2 import service_account
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage
 
-# Set API keys from secrets
-openai_api = st.secrets["OPENAI_API_KEY"]
-pinecone_api = st.secrets["PINECONE_API_KEY"]
-pinecone_env = st.secrets["PINECONE_ENVIRONMENT"]
-index_name = st.secrets["PINECONE_INDEX_NAME"]
-langsmith_api_key = st.secrets["LANGSMITH_API_KEY"]
-agent_template = st.secrets.get("LANGSMITH_PROJECT", "default")
+# Set environment variables for Langchain and SendGrid
+os.environ["LANGCHAIN_TRACING_V2"]="true"
+os.environ["LANGCHAIN_API_KEY"]=st.secrets['LANGCHAIN_API_KEY']
+os.environ["LANGCHAIN_PROJECT"]="SalesCompAgent"
+os.environ['LANGCHAIN_ENDPOINT']="https://api.smith.langchain.com"
+os.environ['SENDGRID_API_KEY']=st.secrets['SENDGRID_API_KEY']
 
-# Set API keys and environment variables
-os.environ["OPENAI_API_KEY"] = openai_api
-os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
-os.environ["LANGCHAIN_PROJECT"] = agent_template
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
+def initialize_prompts():
 
-# Initialize Pinecone
-pinecone.init(api_key=pinecone_api, environment=pinecone_env)
-index = pinecone.Index(index_name)
+    if "credentials" not in st.session_state:
+        st.session_state.credentials = get_google_cloud_credentials()
+    if "prompts" not in st.session_state:
+        prompts = get_all_prompts(st.session_state.credentials)
+        st.session_state.prompts = prompts
 
-# Embedding + Vector Store
-embed_model = OpenAIEmbeddings()
-vectorstore = Pinecone.from_existing_index(index_name=index_name, embedding=embed_model, text_key="text")
+def start_chat(container=st):
+ 
+    container.title('Sales Comp Agent')
+    st.markdown("#### Hey! 👋 I'm ready to assist you with all things sales comp.")
+    avatars={"system":"💻🧠", "user":"🧑‍💼", "assistant":"🌀"} 
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-# Retrieval-based QA chain
-llm = ChatOpenAI(temperature=0)
-qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=vectorstore.as_retriever())
+    if "thread-id" not in st.session_state:
+        st.session_state.thread_id = random.randint(1000, 9999)
+    thread_id = st.session_state.thread_id
 
-# UI design
-st.title("My AI Agent")
-query = st.text_input("Ask me something:")
-if query:
-    response = qa_chain.run(query)
-    st.write(response)
+    for message in st.session_state.messages:
+        if message["role"] != "system":
+            avatar=avatars[message["role"]]
+            with st.chat_message(message["role"], avatar=avatar):
+                st.markdown(message["content"]) 
+
+    if prompt := st.chat_input("Ask me anything related to sales comp.."):
+        escaped_prompt = prompt.replace("$", "\\$")
+        st.session_state.messages.append({"role": "user", "content": escaped_prompt})
+        with st.chat_message("user", avatar=avatars["user"]):
+            st.write(escaped_prompt)
+        
+        # Initialize salesCompAgent in graph.py 
+        app = salesCompAgent(st.secrets['OPENAI_API_KEY'])
+        thread={"configurable":{"thread_id":thread_id}}
+        
+        # Stream responses from the instance of salesCompAgent which is called "app"
+        for s in app.graph.stream({'initialMessage': prompt, 'sessionState': st.session_state, 
+        'sessionHistory': st.session_state.messages}, thread):
+
+            if resp := v.get("responseToUser"):
+                with st.chat_message("assistant", avatar=avatars["assistant"]):
+                    st.write(resp) 
+                st.session_state.messages.append({"role": "assistant", "content": resp})
+
+if __name__ == '__main__':
+    initialize_prompts()
+    start_chat()
