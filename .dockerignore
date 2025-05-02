@@ -1,0 +1,22 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.so
+
+# Secrets and environment config
+.env
+.secrets
+.streamlit/secrets.toml
+
+# Jupyter notebooks and logs
+*.ipynb
+*.log
+
+# OS / editor files
+.DS_Store
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
