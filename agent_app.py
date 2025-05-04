@@ -1,4 +1,4 @@
-# streamlit_app.py
+# agent_app.py
 # Copyright 2024 Jahangir Iqbal
 
 import os
